@@ -1,0 +1,6 @@
+*.pdb
+*.exe
+*.map
+*.obj
+*.sublime-workspace
+gylib/
