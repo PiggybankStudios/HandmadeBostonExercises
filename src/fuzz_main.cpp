@@ -1,26 +1,15 @@
 /*
-File:   main.cpp
+File:   fuzz_main.cpp
 Author: Taylor Robbins
-Date:   08\04\2023
+Date:   08\05\2023
 Description: 
-	** The main entry point, and the one file that needs to be compiled (we include all other files from this one) 
+	** None 
 */
 
-#include "gylib/gy_defines_check.h"
-#include "program_defines.h"
-
-#include <Windows.h>
-
-#define GYLIB_LOOKUP_PRIMES_10
-#include "gylib/gy.h"
-
-#include "arena.h"
-
-#include "debug.cpp"
-
-#if !FUZZ_TESTING
-int main()
+int LLVMFuzzerTestOneInput(const void* data, int size)
 {
+	UNUSED(data);
+	UNUSED(size);
 	Arena* mainArena = ArenaAlloc(Megabytes(1));
 	ArenaSetAutoAlign(mainArena, Kilobytes(1));
 	
@@ -32,8 +21,3 @@ int main()
 	
 	return 0;
 }
-#else
-#include "fuzz_main.cpp"
-#endif
-
-#include "arena.cpp"

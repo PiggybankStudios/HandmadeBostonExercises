@@ -3,15 +3,20 @@
 set ProjectName=Handmade Boston Exercises
 set ProjectNameSafe=HmBostonEx
 
-set DebugBuild=1
+set DebugBuild=0
 set DeveloperBuild=1
 set AssertionsEnabled=1
+set RunProgram=1
+set FuzzTesting=1
 
-set SourceFolder=..\src
 set LibFolder=..
+set RunFolder=..
+set SourceFolder=..\src
 set MainSourceFilePath=%SourceFolder%\main.cpp
+set LlvmInstallDir=C:\Program Files\LLVM
+set OutputExeName=%ProjectNameSafe%.exe
 
-set CompilerFlags=-DWINDOWS_COMPILATION -DPROJECT_NAME="\"%ProjectName%\"" -DPROJECT_NAME_SAFE=\"%ProjectNameSafe%\" -DDEBUG_BUILD=%DebugBuild% -DDEVELOPER_BUILD=%DeveloperBuild% -DDEMO_BUILD=0 -DSTEAM_BUILD=0 -DPROCMON_SUPPORTED=0 -DBOX2D_SUPPORTED=0 -DOPENGL_SUPPORTED=0 -DVULKAN_SUPPORTED=0 -DDIRECTX_SUPPORTED=0 -DSLUG_SUPPORTED=0 -DJSON_SUPPORTED=0 -DASSERTIONS_ENABLED=%AssertionsEnabled%
+set CompilerFlags=-DWINDOWS_COMPILATION -DFUZZ_TESTING=%FuzzTesting% -DPROJECT_NAME="\"%ProjectName%\"" -DPROJECT_NAME_SAFE=\"%ProjectNameSafe%\" -DDEBUG_BUILD=%DebugBuild% -DDEVELOPER_BUILD=%DeveloperBuild% -DDEMO_BUILD=0 -DSTEAM_BUILD=0 -DPROCMON_SUPPORTED=0 -DBOX2D_SUPPORTED=0 -DOPENGL_SUPPORTED=0 -DVULKAN_SUPPORTED=0 -DDIRECTX_SUPPORTED=0 -DSLUG_SUPPORTED=0 -DJSON_SUPPORTED=0 -DASSERTIONS_ENABLED=%AssertionsEnabled%
 rem /FC = Full path for error messages
 rem /EHsc = Exception Handling Model: Standard C++ Stack Unwinding. Functions declared as extern "C" can't throw exceptions
 rem /EHa- = TODO: Do we really need this?? It seems like this option should be off if we specify s and c earlier
@@ -36,6 +41,7 @@ set CompilerFlags=%CompilerFlags% /wd4130 /wd4201 /wd4324 /wd4458 /wd4505 /wd499
 set Libraries=gdi32.lib User32.lib Shell32.lib kernel32.lib winmm.lib Winhttp.lib Shlwapi.lib Ole32.lib
 set LinkerFlags=-incremental:no
 set IncludeDirectories=/I"%SourceFolder%" /I"%LibFolder%"
+set LibraryDirectories=
 
 if "%DebugBuild%"=="1" (
 	rem /Od = Optimization level: Debug
@@ -57,13 +63,27 @@ if "%DebugBuild%"=="1" (
 	rem /MT = Statically link the standard library [not as a DLL]
 	rem /Zi = Generate complete debugging information [optional]
 	rem /fsanitize=address = Enable Address Sanitizer [optional]
-	set CompilerFlags=%CompilerFlags% /Ot /Oy /O2 /MT
+	set CompilerFlags=%CompilerFlags% /Ot /Oy /O2 /MT /Zi
+)
+
+if "%FuzzTesting%"=="1" (
+	set CompilerFlags=%CompilerFlags% /fsanitize=address /fsanitize=fuzzer
+	set LibraryDirectories=%LibraryDirectories% /LIBPATH:"%LlvmInstallDir%\lib\clang\13.0.1\lib\windows"
+	set OutputExeName=%ProjectNameSafe%_Fuzz.exe
 )
 
 rem call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 rem call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" amd64 -no_logo
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64
 
-cl /Fe%ProjectNameSafe%.exe %CompilerFlags% %IncludeDirectories% "%MainSourceFilePath%" /link %LinkerFlags% %Libraries%
+cl /Fe%OutputExeName% %CompilerFlags% %IncludeDirectories% "%MainSourceFilePath%" /link %LibraryDirectories% %LinkerFlags% %Libraries%
 
 echo [Build Finished!]
+
+if "%RunProgram%"=="1" (
+	echo [Running Program...]
+	pushd %RunFolder%
+	build\%OutputExeName%
+	popd
+	echo [Program Finished!]
+)
